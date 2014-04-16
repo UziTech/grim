@@ -9,8 +9,7 @@ class Deprecation
     Error.prepareStackTrace = originalPrepareStackTrace
     stack
 
-  @getMethodName: (stack) ->
-    callsite = stack[0]
+  @getMethodName: (callsite) ->
     if callsite.getTypeName() == "Window"
       callsite.getFunctionName()
     else
@@ -23,11 +22,6 @@ class Deprecation
     @count = 0
     @stacks = []
 
-  addStack: (stack) ->
-    @methodName = Deprecation.getMethodName(stack) unless @methodName?
-    @stacks.push(stack)
-    @count++
-
   getMethodName: ->
     @methodName
 
@@ -39,3 +33,21 @@ class Deprecation
 
   getCount: ->
     @count
+
+  addStack: (stack) ->
+    @methodName = Deprecation.getMethodName(stack) unless @methodName?
+    @parseStack(stack)
+    @stacks.push(stack) if @isStackUnique(stack)
+    @count++
+
+  parseStack: (stack) ->
+    stack.map (callsite) ->
+      methodName: Deprecation.getMethodName(callsite)
+      location: Deprecation.getMethodName(stack)
+
+  isStackUnique: (stack) ->
+    stacks = stacks.filter (s) ->
+      return false if s.length == stack.length
+
+      for {methodName, location}, i in s
+        return false unless methodName != stacks[i].methodName or location != stacks[i].location
